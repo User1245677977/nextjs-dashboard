@@ -1,3 +1,4 @@
+import { unstable_noStore as noStore } from 'next/cache';
 import postgres from 'postgres';
 import {
   CustomerField,
@@ -13,7 +14,15 @@ const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require' });
 
 export async function fetchRevenue() {
   try {
+    // We artificially delay a response for demo purposes.
+    // Don't do this in production :)
+    console.log('Fetching revenue data...');
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+
     const data = await sql<Revenue[]>`SELECT * FROM revenue`;
+
+    console.log('Data fetch completed after 3 seconds.');
+
     return data;
   } catch (error) {
     console.error('Database Error:', error);
@@ -23,6 +32,7 @@ export async function fetchRevenue() {
 
 export async function fetchLatestInvoices() {
   try {
+    noStore();
     const data = await sql<LatestInvoiceRaw[]>`
       SELECT invoices.amount, customers.name, customers.image_url, customers.email, invoices.id
       FROM invoices
@@ -43,6 +53,7 @@ export async function fetchLatestInvoices() {
 
 export async function fetchCardData() {
   try {
+    noStore();
     const invoiceCountPromise = sql`SELECT COUNT(*) FROM invoices`;
     const customerCountPromise = sql`SELECT COUNT(*) FROM customers`;
     const invoiceStatusPromise = sql`SELECT
@@ -78,9 +89,10 @@ export async function fetchFilteredInvoices(
   query: string,
   currentPage: number,
 ) {
-  const offset = (currentPage - 1) * ITEMS_PER_PAGE;
-
   try {
+    noStore();
+    const offset = (currentPage - 1) * ITEMS_PER_PAGE;
+
     const invoices = await sql<InvoicesTable[]>`
       SELECT
         invoices.id,
@@ -111,6 +123,7 @@ export async function fetchFilteredInvoices(
 
 export async function fetchInvoicesPages(query: string) {
   try {
+    noStore();
     const data = await sql`SELECT COUNT(*)
     FROM invoices
     JOIN customers ON invoices.customer_id = customers.id
@@ -132,6 +145,7 @@ export async function fetchInvoicesPages(query: string) {
 
 export async function fetchInvoiceById(id: string) {
   try {
+    noStore();
     const data = await sql<InvoiceForm[]>`
       SELECT
         invoices.id,
@@ -156,6 +170,7 @@ export async function fetchInvoiceById(id: string) {
 
 export async function fetchCustomers() {
   try {
+    noStore();
     const customers = await sql<CustomerField[]>`
       SELECT
         id,
@@ -173,6 +188,7 @@ export async function fetchCustomers() {
 
 export async function fetchFilteredCustomers(query: string) {
   try {
+    noStore();
     const data = await sql<CustomersTableType[]>`
 		SELECT
 		  customers.id,
